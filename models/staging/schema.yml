@@ -1,0 +1,78 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Raw Telegram messages loaded from the JSON data lake into PostgreSQL."
+    schema: raw
+    tables:
+      - name: telegram_messages
+        description: "All scraped Telegram messages across all channels."
+        columns:
+          - name: message_id
+            description: "Unique message ID from Telegram API."
+          - name: channel_name
+            description: "Telegram channel username (lowercase)."
+          - name: message_date
+            description: "UTC timestamp of the original message."
+          - name: message_text
+            description: "Raw text content of the message."
+          - name: views
+            description: "Number of times the message was viewed."
+          - name: forwards
+            description: "Number of times the message was forwarded."
+          - name: has_photo
+            description: "True if the message contains a photo."
+          - name: scraped_at
+            description: "Timestamp when the message was scraped."
+
+models:
+  - name: stg_telegram_messages
+    description: >
+      Cleaned and standardized Telegram messages. Casts types, removes
+      invalid records (nulls, future dates, negative views), adds derived
+      fields (message_length, has_image, has_text, channel_type).
+    columns:
+      - name: message_id
+        description: "Telegram message ID (not unique across channels)."
+        tests:
+          - not_null
+      - name: channel_name
+        description: "Lowercased, trimmed channel username."
+        tests:
+          - not_null
+      - name: message_date
+        description: "UTC timestamp of the message."
+        tests:
+          - not_null
+      - name: message_date_day
+        description: "Date portion of message_date for joining to dim_dates."
+        tests:
+          - not_null
+      - name: message_text
+        description: "Trimmed message text (may be empty for image-only posts)."
+      - name: message_length
+        description: "Character count of message_text."
+        tests:
+          - not_null
+      - name: view_count
+        description: "Number of views, defaulted to 0 if null."
+        tests:
+          - not_null
+      - name: forward_count
+        description: "Number of forwards, defaulted to 0 if null."
+        tests:
+          - not_null
+      - name: has_image
+        description: "True if the message contains a photo."
+        tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
+      - name: channel_type
+        description: "Business classification: Pharmaceutical / Cosmetics / Medical."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Pharmaceutical', 'Cosmetics', 'Medical']
+      - name: has_text
+        description: "True if message_text is non-empty."

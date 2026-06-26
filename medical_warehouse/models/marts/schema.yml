@@ -1,0 +1,82 @@
+﻿version: 2
+
+models:
+
+  - name: dim_channels
+    description: >
+      Channel dimension table. One row per unique Telegram channel scraped.
+    columns:
+      - name: channel_key
+        description: "Surrogate key (MD5 hash of channel_name)."
+        tests:
+          - unique
+          - not_null
+      - name: channel_name
+        description: "Lowercased Telegram channel username."
+        tests:
+          - unique
+          - not_null
+      - name: channel_type
+        description: "Business classification: Pharmaceutical / Cosmetics / Medical."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Pharmaceutical', 'Cosmetics', 'Medical']
+      - name: first_post_date
+        tests:
+          - not_null
+      - name: last_post_date
+        tests:
+          - not_null
+      - name: total_posts
+        tests:
+          - not_null
+
+  - name: dim_dates
+    description: >
+      Calendar date dimension. One row per calendar date.
+    columns:
+      - name: date_key
+        tests:
+          - unique
+          - not_null
+      - name: full_date
+        tests:
+          - unique
+          - not_null
+      - name: is_weekend
+        tests:
+          - not_null
+
+  - name: fct_messages
+    description: >
+      Central fact table. One row per Telegram message.
+    columns:
+      - name: message_key
+        tests:
+          - unique
+          - not_null
+      - name: message_id
+        tests:
+          - not_null
+      - name: channel_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_channels')
+              field: channel_key
+      - name: date_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_dates')
+              field: date_key
+      - name: view_count
+        tests:
+          - not_null
+      - name: has_image
+        tests:
+          - not_null
+      - name: message_date
+        tests:
+          - not_null
