@@ -1,0 +1,53 @@
+#version: "3.9"
+
+services:
+  # ── PostgreSQL data warehouse ───────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: medical_warehouse_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-medical_warehouse}
+      POSTGRES_USER: ${POSTGRES_USER:-loolteke}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-#1234#}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-loolteke}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Telegram scraper ────────────────────────────────────────────────────
+  scraper:
+    build: .
+    container_name: telegram_scraper
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    command: python src/scraper.py
+    restart: "no"          # run once; use cron / Airflow for scheduling
+
+  # ── FastAPI layer ───────────────────────────────────────────────────────
+  api:
+    build: .
+    container_name: medical_api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
