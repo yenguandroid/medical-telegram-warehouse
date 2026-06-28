@@ -76,3 +76,27 @@ models:
               values: ['Pharmaceutical', 'Cosmetics', 'Medical']
       - name: has_text
         description: "True if message_text is non-empty."
+       - name: fct_image_detections
+    description: "YOLO detection results joined with messages, channels and dates."
+    columns:
+      - name: detection_key
+        tests:
+          - unique
+          - not_null
+      - name: channel_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_channels')
+              field: channel_key
+      - name: date_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_dates')
+              field: date_key
+      - name: image_category
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['promotional', 'product_display', 'lifestyle', 'other']

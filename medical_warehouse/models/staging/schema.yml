@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: raw
-    description: "Raw Telegram messages loaded from the JSON data lake into PostgreSQL."
+    description: "Raw data loaded from the JSON data lake and YOLO pipeline."
     schema: raw
     tables:
       - name: telegram_messages
@@ -11,7 +11,7 @@ sources:
           - name: message_id
             description: "Unique message ID from Telegram API."
           - name: channel_name
-            description: "Telegram channel username (lowercase)."
+            description: "Telegram channel username."
           - name: message_date
             description: "UTC timestamp of the original message."
           - name: message_text
@@ -24,16 +24,31 @@ sources:
             description: "True if the message contains a photo."
           - name: scraped_at
             description: "Timestamp when the message was scraped."
+      - name: yolo_detections
+        description: "YOLOv8 object detection results for all downloaded images."
+        columns:
+          - name: image_path
+            description: "Relative path to the image file."
+          - name: channel_name
+            description: "Channel the image belongs to."
+          - name: message_id
+            description: "Telegram message ID the image came from."
+          - name: detected_class
+            description: "COCO class name detected by YOLO."
+          - name: confidence
+            description: "Detection confidence score (0.0 to 1.0)."
+          - name: image_category
+            description: "promotional / product_display / lifestyle / other."
+          - name: model_name
+            description: "YOLO model used (e.g. yolov8n.pt)."
 
 models:
   - name: stg_telegram_messages
     description: >
-      Cleaned and standardized Telegram messages. Casts types, removes
-      invalid records (nulls, future dates, negative views), adds derived
-      fields (message_length, has_image, has_text, channel_type).
+      Cleaned and standardized Telegram messages.
     columns:
       - name: message_id
-        description: "Telegram message ID (not unique across channels)."
+        description: "Telegram message ID."
         tests:
           - not_null
       - name: channel_name
@@ -45,11 +60,9 @@ models:
         tests:
           - not_null
       - name: message_date_day
-        description: "Date portion of message_date for joining to dim_dates."
+        description: "Date portion of message_date."
         tests:
           - not_null
-      - name: message_text
-        description: "Trimmed message text (may be empty for image-only posts)."
       - name: message_length
         description: "Character count of message_text."
         tests:
@@ -69,7 +82,7 @@ models:
           - accepted_values:
               values: [true, false]
       - name: channel_type
-        description: "Business classification: Pharmaceutical / Cosmetics / Medical."
+        description: "Pharmaceutical / Cosmetics / Medical."
         tests:
           - not_null
           - accepted_values:
