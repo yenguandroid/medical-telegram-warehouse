@@ -1,0 +1,18 @@
+# dagster.yaml
+# Dagster instance configuration for local development.
+# Place this file in the project root.
+
+telemetry:
+  enabled: false
+
+storage:
+  sqlite:
+    base_dir: .dagster_home
+
+run_launcher:
+  module: dagster.core.launcher
+  class: DefaultRunLauncher
+
+run_coordinator:
+  module: dagster.core.run_coordinator
+  class: DefaultRunCoordinator

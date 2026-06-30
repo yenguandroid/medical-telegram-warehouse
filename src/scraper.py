@@ -22,6 +22,17 @@ from telethon.errors import (
 )
 from telethon.tl.types import MessageMediaPhoto, PeerChannel
 
+# Force UTF-8 stdout/stderr so emoji/arrows in log messages don't crash
+# on Windows consoles using the legacy 'charmap' (cp1252) encoding —
+# this matters especially when running under Dagster, which captures
+# subprocess output with strict encoding by default.
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except AttributeError:
+        pass  # Python < 3.7 fallback not needed; project requires 3.11+
+
 # ─────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────

@@ -1,0 +1,8 @@
+# workspace.yaml
+# Tells Dagster where to find the pipeline definitions.
+# Place this file in the project root.
+
+load_from:
+  - python_file:
+      relative_path: pipeline/pipeline.py
+      attribute: defs
